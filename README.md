@@ -17,6 +17,6 @@ Violet é um jogo de sobrevivência
 
 Todas contribuições são bem vindas
 
-## :memo: License
+## :memo: Licença
 - Código: Licença MIT (veja o arquivo LICENSE para detalhes)
-- Gráficos e outros recursos: Todos os direitos reservados
+- Ilustrações e outros recursos: Todos os direitos reservados
