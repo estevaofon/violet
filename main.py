@@ -52,9 +52,6 @@ class AnimatedSprite:
         if not self.current_animation:
             return
 
-        print(f"Current frame: {self.current_frame}")  # Add this
-        print(
-            f"Number of frames in {self.current_animation}: {len(self.animations[self.current_animation]['frames'])}")  # And this
         if self.current_frame >= len(self.animations[self.current_animation]['frames']):
             self.current_frame = 0
 
@@ -103,13 +100,13 @@ terrain = pygame.transform.scale(terrain, (SCREEN_WIDTH*1.5, SCREEN_HEIGHT*1.5))
 # Create AnimatedSprite objects
 scale = 3
 animated_sprite = AnimatedSprite()
-animated_sprite.add_animation('side', 'vampire_hunter6-Sheet.png', 8, 200)
+animated_sprite.add_animation('side', 'assets/vampire_hunter6-Sheet.png', 8, 200)
 animated_sprite.resize('side', scale)
-animated_sprite.add_animation('idle', 'sprite_sheet.png', 3, 200)
+animated_sprite.add_animation('idle', 'assets/sprite_sheet.png', 3, 200)
 animated_sprite.resize('idle', scale)
-animated_sprite.add_animation('front', 'vampire_hunter_fron2t-Sheet.png', 4, 200)
+animated_sprite.add_animation('front', 'assets/vampire_hunter_fron2t-Sheet.png', 4, 200)
 animated_sprite.resize('front', scale)
-animated_sprite.add_animation('back', 'vampire_hunter_back-Sheet.png', 4, 200)
+animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4, 200)
 animated_sprite.resize('back', scale)
 
 # Main game loop

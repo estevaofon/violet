@@ -1,11 +1,11 @@
-## :space_invader: Violet
+## Violet
 
 Violet é um jogo de sobrevivência feito em python com pygame.
+ <img src="assets/hunter.gif " alt="Girl in a jacket" width="200"> 
 
-## :wrench: Requisitos
+## Requisitos
 
-- pygame
-
+```pip install pygame```
 
 ## :runner:  Uso
 
@@ -16,5 +16,4 @@ Violet é um jogo de sobrevivência feito em python com pygame.
 Todas contribuições são bem vindas
 
 ## :memo: Licença
-- Código: Licença MIT (veja o arquivo LICENSE para detalhes)
-- Ilustrações e outros recursos: Todos os direitos reservados
+MIT License
