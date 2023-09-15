@@ -1,17 +1,15 @@
 ## :space_invader: Violet
 
-Violet é um jogo de sobrevivência
+Violet é um jogo de sobrevivência feito em python com pygame.
 
 ## :wrench: Requisitos
 
-
 - pygame
-- sys
 
 
 ## :runner:  Uso
 
-```bash python3 main.py```
+```python main.py```
 
 ## :raising_hand: Contribution
 
