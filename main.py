@@ -93,12 +93,12 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Sprite Sheet Animation')
 clock = pygame.time.Clock()
 
-terrain = pygame.image.load("terrain.png")
+terrain = pygame.image.load("assets/terrain.png")
 #scale by 2
 terrain = pygame.transform.scale(terrain, (SCREEN_WIDTH*1.5, SCREEN_HEIGHT*1.5))
 
 # Create AnimatedSprite objects
-scale = 3
+scale = 1.5
 animated_sprite = AnimatedSprite()
 animated_sprite.add_animation('side', 'assets/vampire_hunter6-Sheet.png', 8, 200)
 animated_sprite.resize('side', scale)
@@ -108,6 +108,27 @@ animated_sprite.add_animation('front', 'assets/vampire_hunter_fron2t-Sheet.png',
 animated_sprite.resize('front', scale)
 animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4, 200)
 animated_sprite.resize('back', scale)
+
+nosferatu_sprite = AnimatedSprite()
+nosferatu_sprite.add_animation('default', 'assets/nosferatu.png', 4, 150)
+nosferatu_sprite.resize('default', 2)
+
+def move_enemy_towards_player(x_player, y_player, x_enemy, y_enemy, speed):
+    # Calculate the distance between the player and the enemy
+    delta_x = x_player - x_enemy
+    delta_y = y_player - y_enemy
+
+    if delta_x > 0:
+        x_enemy = speed
+    if delta_y > 0:
+        y_enemy = speed
+    if delta_x < 0:
+        x_enemy = speed*-1
+    if delta_y < 0:
+        y_enemy = speed*-1
+
+    return x_enemy, y_enemy
+
 
 # Main game loop
 while True:
@@ -137,11 +158,19 @@ while True:
     else:
         animated_sprite.set_animation('idle')
 
+    nosferatu_sprite.set_animation('default')
+
     screen.fill(WHITE)
-    #screen.blit(terrain, (-120, -120))
+    #screen.blit(terrain, (-120, -120)
+
+    delta_x, delta_y = move_enemy_towards_player(animated_sprite.x_position, animated_sprite.y_position, nosferatu_sprite.x_position, nosferatu_sprite.y_position, 1)
+    nosferatu_sprite.x_position += delta_x
+    nosferatu_sprite.y_position += delta_y
 
     animated_sprite.draw(screen)
     animated_sprite.update(elapsed_time)
+    nosferatu_sprite.draw(screen)
+    nosferatu_sprite.update(elapsed_time)
 
     pygame.display.update()
     clock.tick(FPS)
