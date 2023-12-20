@@ -84,7 +84,7 @@ class AnimatedSprite:
 
 # Initialize Pygame
 pygame.init()
-SCREEN_WIDTH, SCREEN_HEIGHT = 600, 850
+SCREEN_WIDTH, SCREEN_HEIGHT = 600, 600
 FPS = 30
 WHITE = (255, 255, 255)
 
@@ -95,7 +95,7 @@ clock = pygame.time.Clock()
 
 terrain = pygame.image.load("assets/terrain.png")
 #scale by 2
-terrain = pygame.transform.scale(terrain, (SCREEN_WIDTH*1.5, SCREEN_HEIGHT*1.5))
+terrain = pygame.transform.scale(terrain, (SCREEN_WIDTH*0.5, SCREEN_HEIGHT*0.5))
 
 # Create AnimatedSprite objects
 scale = 1.5
@@ -161,7 +161,10 @@ while True:
     nosferatu_sprite.set_animation('default')
 
     screen.fill(WHITE)
-    #screen.blit(terrain, (-120, -120)
+    screen.blit(terrain, (0, 0))
+    screen.blit(terrain, (300, 0))
+    screen.blit(terrain, (0, 300))
+    screen.blit(terrain, (300, 300))
 
     delta_x, delta_y = move_enemy_towards_player(animated_sprite.x_position, animated_sprite.y_position, nosferatu_sprite.x_position, nosferatu_sprite.y_position, 1)
     nosferatu_sprite.x_position += delta_x
