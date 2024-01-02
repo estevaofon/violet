@@ -126,6 +126,12 @@ class Entity:
         self.collision_box.x = self.sprite.x_position + self.delta_x
         self.collision_box.y = self.sprite.y_position + self.delta_y
 
+    def get_frame_width(self):
+        return self.sprite.get_frame_width()
+
+    def get_frame_height(self):
+        return self.sprite.get_frame_height()
+
 
 class Rectangle:
     def __init__(self, x, y, width, height):
@@ -141,6 +147,19 @@ class Rectangle:
                 self.y < other.y + other.height and
                 self.y + self.height > other.y
         )
+
+
+class Projectile:
+    def __init__(self, x, y, width, height, speed):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.speed = speed
+
+    def move(self):
+        self.rect.x += self.speed
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, (0, 255, 0), self.rect)
+
 
 
 def move_towards(target, current, speed):
@@ -193,7 +212,7 @@ animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4,
 nosferatu_sprite = AnimatedSprite()
 nosferatu_sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
 
-nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(3)]
+nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(6)]
 
 for nosferatu in nosferatus:
     nosferatu.sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
@@ -203,11 +222,12 @@ for nosferatu in nosferatus:
 player_collision_box = Rectangle(40, 0, 60, 80)
 npc_collision_box = Rectangle(60, 0, 60, 80)
 
+import copy
 player = Entity(animated_sprite, player_collision_box)
-npcs = [Entity(nosferatu_sprite, npc_collision_box) for nosferatu_sprite in nosferatus]
+npcs = [Entity(nosferatu_sprite, copy.copy(npc_collision_box)) for nosferatu_sprite in nosferatus]
 
 start_time = time.time()
-
+projectiles = []
 # Main game loop
 while True:
     elapsed_time = clock.get_time()
@@ -216,6 +236,17 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botão esquerdo do mouse
+            # Crie um novo projétil na posição do jogador
+            # pegar a posição do mouse
+            pos = pygame.mouse.get_pos()
+            if pos[0] < player.x_position:
+                projectile = Projectile(int(player.x_position)+50,
+                                        int(player.y_position)+70, 10, 10, -10)
+            else:
+                projectile = Projectile(int(player.x_position)+70,
+                                        int(player.y_position)+70, 10, 10, 10)
+            projectiles.append(projectile)
 
     keys = pygame.key.get_pressed()
 
@@ -255,9 +286,26 @@ while True:
         pygame.draw.rect(screen, (0, 0, 255),
                          (npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height),
                          2)
+        if npc.hp <= 0:
+            npcs.remove(npc)
 
     player.draw_sprite(screen, elapsed_time)
     draw_hp(player, screen)
+
+    for projectile in projectiles:
+        projectile.move()
+        projectile.draw(screen)
+
+    # npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height
+
+    # Dentro do loop principal, adicione a lógica para verificar colisões entre projéteis e NPCs
+    # npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height
+    for projectile in projectiles.copy():
+        for npc in npcs:
+            if projectile.rect.colliderect(npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height):
+                npc.hp -= 10  # Reduz a HP do NPC quando atingido
+                if projectile in projectiles:
+                    projectiles.remove(projectile)  # Remove o projétil após colidir com um NPC
 
     time_elapsed = time.time() - start_time
     duration = 60
@@ -272,7 +320,8 @@ while True:
     textRect.center = (SCREEN_WIDTH - 100, 30)
     screen.blit(text, textRect)
 
-    if time_elapsed > duration:
+
+    if time_elapsed > duration or len(npcs) == 0:
         font = pygame.font.Font('freesansbold.ttf', 32)
         text = font.render('YOU WON', True, WHITE)
         textRect = text.get_rect()
