@@ -194,6 +194,89 @@ def draw_hp(entity, screen, delta_x=30, delta_y=30):
     screen.blit(text, text_rect)
 
 
+def check_game_over(player, screen):
+    if player.hp <= 0:
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        text = font.render('GAME OVER', True, WHITE)
+        textRect = text.get_rect()
+        textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        screen.blit(text, textRect)
+
+
+def check_vitory(time_elapsed, duration, npcs, screen):
+    if time_elapsed > duration or len(npcs) == 0:
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        text = font.render('YOU WON', True, WHITE)
+        textRect = text.get_rect()
+        textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        screen.blit(text, textRect)
+
+
+def render_time_remaining(screen, time_elapsed, duration=60):
+
+    remaining_time = max(0, duration - time_elapsed)
+    remaining_time_in_minutes = int(remaining_time // 60)
+    remaining_time_in_seconds = int(remaining_time % 60)
+    remaining_time_in_seconds = str(remaining_time_in_seconds).zfill(2)
+    remaining_time_in_minutes = str(remaining_time_in_minutes).zfill(2)
+    font = pygame.font.Font('freesansbold.ttf', 14)
+    text = font.render(f'Time {remaining_time_in_minutes}:{remaining_time_in_seconds}', True, WHITE)
+    textRect = text.get_rect()
+    textRect.center = (SCREEN_WIDTH - 100, 30)
+    screen.blit(text, textRect)
+
+
+def check_colision_with_projectile(projectiles, npcs):
+    for projectile in projectiles.copy():
+        for npc in npcs:
+            if projectile.rect.colliderect(npc.collision_box.x, npc.collision_box.y, npc.collision_box.width,
+                                           npc.collision_box.height):
+                npc.hp -= 10  # Reduz a HP do NPC quando atingido
+                if projectile in projectiles:
+                    projectiles.remove(projectile)  # Remove o projétil após colidir com um NPC
+
+
+def move_projectile(projectiles):
+    for projectile in projectiles:
+        projectile.move_x()
+        projectile.move_y()
+        projectile.draw(screen)
+
+
+def move_npcs(npcs):
+    for npc in npcs:
+        delta_x = move_towards(player.x_position, npc.x_position, 1)
+        delta_y = move_towards(player.y_position, npc.y_position, 1)
+        npc.set_animation('default')
+        npc.x_position += delta_x
+        npc.y_position += delta_y
+
+
+def draw_npcs(npcs, screen, elapsed_time):
+    for npc in npcs:
+        npc.draw_sprite(screen, elapsed_time)
+        draw_hp(npc, screen, delta_x=50, delta_y=50)
+        # pygame.draw.rect(screen, (0, 0, 255),
+        #                  (npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height),
+        #                  2)
+
+
+def apply_damage_to_player(player, npcs):
+    for npc in npcs:
+        if player.collision_box.collides_with(npc.collision_box):
+            player.hp -= 1
+
+
+def remove_dead_npcs(npcs):
+    for npc in npcs.copy():
+        if npc.hp <= 0:
+            npcs.remove(npc)
+
+
+def update_npc_collision_box(npcs):
+    for npc in npcs:
+        npc.update_collision_box()
+
 # Initialize Pygame
 pygame.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 600, 600
@@ -246,8 +329,6 @@ while True:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botão esquerdo do mouse
-            # Crie um novo projétil na posição do jogador
-            # pegar a posição do mouse
             idle_time = time.time()
             pos = pygame.mouse.get_pos()
             if pos[0] < player.x_position:
@@ -289,79 +370,25 @@ while True:
         player.y_position -= 5
         player.set_animation('back')
 
-
     if time.time() - idle_time > 0.5:
         player.set_animation('idle')
 
-
+    duration = 60
     draw_tiles(screen, terrain)
     player.update_collision_box()
-
-    for npc in npcs:
-        delta_x = move_towards(player.x_position, npc.x_position, 1)
-        delta_y = move_towards(player.y_position, npc.y_position, 1)
-        npc.set_animation('default')
-        npc.x_position += delta_x
-        npc.y_position += delta_y
-        npc.update_collision_box()
-        npc.draw_sprite(screen, elapsed_time)
-        draw_hp(npc, screen, delta_x=50, delta_y=50)
-
-        if player.collision_box.collides_with(npc.collision_box):
-            player.hp -= 1
-
-        # pygame.draw.rect(screen, (0, 0, 255),
-        #                  (npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height),
-        #                  2)
-        if npc.hp <= 0:
-            npcs.remove(npc)
-
+    move_npcs(npcs)
+    draw_npcs(npcs, screen, elapsed_time)
+    update_npc_collision_box(npcs)
+    apply_damage_to_player(player, npcs)
+    remove_dead_npcs(npcs)
     player.draw_sprite(screen, elapsed_time)
     draw_hp(player, screen)
-
-    for projectile in projectiles:
-        projectile.move_x()
-        projectile.move_y()
-        projectile.draw(screen)
-
-    # npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height
-
-    # Dentro do loop principal, adicione a lógica para verificar colisões entre projéteis e NPCs
-    # npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height
-    for projectile in projectiles.copy():
-        for npc in npcs:
-            if projectile.rect.colliderect(npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height):
-                npc.hp -= 10  # Reduz a HP do NPC quando atingido
-                if projectile in projectiles:
-                    projectiles.remove(projectile)  # Remove o projétil após colidir com um NPC
-
+    move_projectile(projectiles)
+    check_colision_with_projectile(projectiles, npcs)
     time_elapsed = time.time() - start_time
-    duration = 60
-    remaining_time = max(0, duration - time_elapsed)
-    remaining_time_in_minutes = int(remaining_time // 60)
-    remaining_time_in_seconds = int(remaining_time % 60)
-    remaining_time_in_seconds = str(remaining_time_in_seconds).zfill(2)
-    remaining_time_in_minutes = str(remaining_time_in_minutes).zfill(2)
-    font = pygame.font.Font('freesansbold.ttf', 14)
-    text = font.render(f'Time {remaining_time_in_minutes}:{remaining_time_in_seconds}', True, WHITE)
-    textRect = text.get_rect()
-    textRect.center = (SCREEN_WIDTH - 100, 30)
-    screen.blit(text, textRect)
-
-
-    if time_elapsed > duration or len(npcs) == 0:
-        font = pygame.font.Font('freesansbold.ttf', 32)
-        text = font.render('YOU WON', True, WHITE)
-        textRect = text.get_rect()
-        textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        screen.blit(text, textRect)
-
-    if player.hp <= 0:
-        font = pygame.font.Font('freesansbold.ttf', 32)
-        text = font.render('GAME OVER', True, WHITE)
-        textRect = text.get_rect()
-        textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        screen.blit(text, textRect)
+    render_time_remaining(screen, time_elapsed)
+    check_vitory(time_elapsed, duration, npcs, screen)
+    check_game_over(player, screen)
 
     # pygame.draw.rect(screen, (255, 0, 0), (
     #     player.collision_box.x, player.collision_box.y, player.collision_box.width, player.collision_box.height), 2)
