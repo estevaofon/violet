@@ -81,7 +81,6 @@ class AnimatedSprite:
     def get_frame_height(self):
         return self.animations[self.current_animation]['frames'][self.current_frame].get_height()
 
-
 class Entity:
     def __init__(self, sprite, collision_box):
         self.hp = 100
@@ -132,6 +131,9 @@ class Entity:
     def get_frame_height(self):
         return self.sprite.get_frame_height()
 
+    def get_current_animation(self):
+        return self.sprite.current_animation
+
 
 class Rectangle:
     def __init__(self, x, y, width, height):
@@ -150,12 +152,17 @@ class Rectangle:
 
 
 class Projectile:
-    def __init__(self, x, y, width, height, speed):
+    def __init__(self, x, y, width, height, speed_x, speed_y):
         self.rect = pygame.Rect(x, y, width, height)
-        self.speed = speed
+        self.speed_x = speed_x
+        self.speed_y = speed_y
 
-    def move(self):
-        self.rect.x += self.speed
+
+    def move_x(self):
+        self.rect.x += self.speed_x
+
+    def move_y(self):
+        self.rect.y += self.speed_y
 
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 255, 0), self.rect)
@@ -212,7 +219,7 @@ animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4,
 nosferatu_sprite = AnimatedSprite()
 nosferatu_sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
 
-nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(6)]
+nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(10)]
 
 for nosferatu in nosferatus:
     nosferatu.sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
@@ -227,7 +234,9 @@ player = Entity(animated_sprite, player_collision_box)
 npcs = [Entity(nosferatu_sprite, copy.copy(npc_collision_box)) for nosferatu_sprite in nosferatus]
 
 start_time = time.time()
+idle_time = time.time()
 projectiles = []
+player.set_animation('idle')
 # Main game loop
 while True:
     elapsed_time = clock.get_time()
@@ -239,16 +248,29 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botão esquerdo do mouse
             # Crie um novo projétil na posição do jogador
             # pegar a posição do mouse
+            idle_time = time.time()
             pos = pygame.mouse.get_pos()
             if pos[0] < player.x_position:
                 projectile = Projectile(int(player.x_position)+50,
-                                        int(player.y_position)+70, 10, 10, -10)
+                                        int(player.y_position)+70, 10, 10, -10, 0)
+
+            elif player.get_current_animation() == 'front':
+                projectile = Projectile(int(player.x_position) + 70,
+                                        int(player.y_position) + 70, 10, 10, 0, 10)
+            elif player.get_current_animation() == 'back':
+                projectile = Projectile(int(player.x_position) + 70,
+                                        int(player.y_position) + 70, 10, 10, 0, -10)
             else:
                 projectile = Projectile(int(player.x_position)+70,
-                                        int(player.y_position)+70, 10, 10, 10)
+                                        int(player.y_position)+70, 10, 10, 10, 0)
             projectiles.append(projectile)
 
     keys = pygame.key.get_pressed()
+
+    # if key is pressed
+    if keys[pygame.K_d] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or \
+            keys[pygame.K_LEFT] or keys[pygame.K_s] or keys[pygame.K_DOWN] or keys[pygame.K_w] or keys[pygame.K_UP]:
+        idle_time = time.time()
 
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         player.x_position += 5
@@ -258,14 +280,19 @@ while True:
         player.x_position -= 5
         player.set_animation('side')
         player.flip_vertically = True
+
     elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
         player.y_position += 5
         player.set_animation('front')
+
     elif keys[pygame.K_w] or keys[pygame.K_UP]:
         player.y_position -= 5
         player.set_animation('back')
-    else:
+
+
+    if time.time() - idle_time > 0.5:
         player.set_animation('idle')
+
 
     draw_tiles(screen, terrain)
     player.update_collision_box()
@@ -283,9 +310,9 @@ while True:
         if player.collision_box.collides_with(npc.collision_box):
             player.hp -= 1
 
-        pygame.draw.rect(screen, (0, 0, 255),
-                         (npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height),
-                         2)
+        # pygame.draw.rect(screen, (0, 0, 255),
+        #                  (npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height),
+        #                  2)
         if npc.hp <= 0:
             npcs.remove(npc)
 
@@ -293,7 +320,8 @@ while True:
     draw_hp(player, screen)
 
     for projectile in projectiles:
-        projectile.move()
+        projectile.move_x()
+        projectile.move_y()
         projectile.draw(screen)
 
     # npc.collision_box.x, npc.collision_box.y, npc.collision_box.width, npc.collision_box.height
@@ -335,8 +363,8 @@ while True:
         textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         screen.blit(text, textRect)
 
-    pygame.draw.rect(screen, (255, 0, 0), (
-        player.collision_box.x, player.collision_box.y, player.collision_box.width, player.collision_box.height), 2)
+    # pygame.draw.rect(screen, (255, 0, 0), (
+    #     player.collision_box.x, player.collision_box.y, player.collision_box.width, player.collision_box.height), 2)
 
     pygame.display.update()
     clock.tick(FPS)
