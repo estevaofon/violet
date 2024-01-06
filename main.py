@@ -1,7 +1,10 @@
-import pygame
 import sys
 import time
 import random
+import math
+import copy
+from dataclasses import dataclass
+import pygame
 
 
 class AnimatedSprite:
@@ -166,7 +169,7 @@ class Projectile:
 
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 255, 0), self.rect)
-import math
+
 
 class PowerBall:
     def __init__(self, x, y, initial_radius, max_radius, expansion_speed, offset_x=75, offset_y=70):
@@ -220,6 +223,10 @@ class PowerBar:
         pygame.draw.rect(screen, (0, 255, 0), (x, y, fill_width, height))
 
 
+@dataclass
+class Level:
+    npcs: int
+    stage: int
 
 def move_towards(target, current, speed):
     delta = target - current
@@ -255,14 +262,26 @@ def check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=(255
         screen.blit(text, textRect)
 
 
-def check_vitory(start_time, duration, npcs, screen, SCREEN_WIDTH=600, SCREEN_HEIGHT=600, font_color=(255, 255, 255)):
+def next_level(level, start_time, duration, npcs, screen, SCREEN_WIDTH=600, SCREEN_HEIGHT=600, font_color=(255, 255, 255)):
     time_elapsed = time.time() - start_time
     if time_elapsed > duration or len(npcs) == 0:
         font = pygame.font.Font('freesansbold.ttf', 32)
-        text = font.render('YOU WON', True, font_color)
+        text = font.render(str(level.stage), True, font_color)
         textRect = text.get_rect()
         textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         screen.blit(text, textRect)
+        level.stage += 1
+        level.npcs += 4
+        npcs = create_npcs(SCREEN_WIDTH, SCREEN_HEIGHT, level.npcs)
+        start_time = time.time()
+    # display level for 2 seconds
+    if time.time() - start_time < 2:
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        text = font.render(str(level.stage), True, font_color)
+        textRect = text.get_rect()
+        textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        screen.blit(text, textRect)
+    return start_time, level, npcs
 
 
 def render_time_remaining(screen, start_time, SCREEN_WIDTH, duration=60, font_color=(255, 255, 255)):
@@ -335,7 +354,6 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-            import sys
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botão esquerdo do mouse
             idle_time = time.time()
@@ -424,6 +442,32 @@ def update_power_bar(power_bar, elapsed_time):
     # Adjust the rate of power increase as needed
     power_bar.increase_power(elapsed_time * 0.05)
 
+
+def create_player():
+    scale = 1.5
+    animated_sprite = AnimatedSprite()
+    animated_sprite.add_animation('side', 'assets/vampire_hunter6-Sheet.png', 8, 200, scale)
+    animated_sprite.add_animation('idle', 'assets/sprite_sheet.png', 3, 200, scale)
+    animated_sprite.add_animation('front', 'assets/vampire_hunter_fron2t-Sheet.png', 4, 200, scale)
+    animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4, 200, scale)
+    player_collision_box = Rectangle(40, 0, 60, 80)
+    player = Entity(animated_sprite, player_collision_box)
+    return player
+
+
+def create_npcs(screen_width, screen_height, num_npcs):
+    nosferatu_sprite = AnimatedSprite()
+    nosferatu_sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
+    nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(num_npcs)]
+    for nosferatu in nosferatus:
+        nosferatu.sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
+        nosferatu.x_position = random.randint(0, screen_width)
+        nosferatu.y_position = random.randint(0, screen_height)
+    npc_collision_box = Rectangle(60, 0, 60, 80)
+    npcs = [Entity(nosferatu_sprite, copy.copy(npc_collision_box)) for nosferatu_sprite in nosferatus]
+    return npcs
+
+
 def main():
     # Initialize Pygame
     pygame.init()
@@ -442,30 +486,10 @@ def main():
     terrain = pygame.image.load("assets/terrain.png").convert_alpha()
     terrain = pygame.transform.scale(terrain, (int(SCREEN_WIDTH * 0.5), int(SCREEN_HEIGHT * 0.5)))
 
-    # Create AnimatedSprite objects
-    scale = 1.5
-    animated_sprite = AnimatedSprite()
-    animated_sprite.add_animation('side', 'assets/vampire_hunter6-Sheet.png', 8, 200, scale)
-    animated_sprite.add_animation('idle', 'assets/sprite_sheet.png', 3, 200, scale)
-    animated_sprite.add_animation('front', 'assets/vampire_hunter_fron2t-Sheet.png', 4, 200, scale)
-    animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4, 200, scale)
+    npcs = create_npcs(SCREEN_WIDTH, SCREEN_HEIGHT, num_npcs=3)
+    player = create_player()
 
-    nosferatu_sprite = AnimatedSprite()
-    nosferatu_sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
-
-    nosferatus = [Entity(AnimatedSprite(), Rectangle(0, 0, 60, 80)) for _ in range(10)]
-
-    for nosferatu in nosferatus:
-        nosferatu.sprite.add_animation('default', 'assets/nosferatu.png', 4, 150, 2)
-        nosferatu.x_position = random.randint(0, SCREEN_WIDTH)
-        nosferatu.y_position = random.randint(0, SCREEN_HEIGHT)
-
-    player_collision_box = Rectangle(40, 0, 60, 80)
-    npc_collision_box = Rectangle(60, 0, 60, 80)
-
-    import copy
-    player = Entity(animated_sprite, player_collision_box)
-    npcs = [Entity(nosferatu_sprite, copy.copy(npc_collision_box)) for nosferatu_sprite in nosferatus]
+    level = Level(npcs=3, stage=1)
 
     start_time = time.time()
     idle_time = time.time()
@@ -494,7 +518,7 @@ def main():
         remove_dead_npcs(npcs)
         move_projectile(projectiles, screen)
         check_colision_with_projectile(projectiles, npcs)
-        check_vitory(start_time, duration, npcs, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
+        start_time, level, npcs = next_level(level, start_time, duration, npcs, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
 
         #move_power_balls(power_balls)
