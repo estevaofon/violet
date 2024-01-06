@@ -421,9 +421,15 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar
 def check_collision_with_power_balls(power_balls, npcs):
     for power_ball in power_balls.copy():
         for npc in npcs.copy():
-            distance = math.sqrt((power_ball.x - npc.x_position)**2 + (power_ball.y - npc.y_position)**2)
-            if distance < power_ball.radius:
-                npc.hp -= 20  # Adjust the damage as needed
+            power_ball_rect = pygame.Rect(
+                power_ball.x - power_ball.radius,
+                power_ball.y - power_ball.radius,
+                2 * power_ball.radius,
+                2 * power_ball.radius
+            )
+            if power_ball_rect.colliderect(npc.collision_box.x, npc.collision_box.y, npc.collision_box.width,
+                                            npc.collision_box.height):
+                npc.hp -= 20
 
         if power_ball.expand():
             power_balls.remove(power_ball)  # Remove the power ball if it has reached its maximum radius
@@ -487,7 +493,7 @@ def display_level(screen, level, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=(255, 2
 def main():
     # Initialize Pygame
     pygame.init()
-    SCREEN_WIDTH, SCREEN_HEIGHT = 600, 600
+    SCREEN_WIDTH, SCREEN_HEIGHT = 600, 800
     FPS = 30
     WHITE = (255, 255, 255)
 
