@@ -262,7 +262,7 @@ def check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=(255
         screen.blit(text, textRect)
 
 
-def next_level(level, start_time, duration, npcs, screen, SCREEN_WIDTH=600, SCREEN_HEIGHT=600, font_color=(255, 255, 255)):
+def next_level(level, start_time, duration, npcs, screen, power_bar, SCREEN_WIDTH=600, SCREEN_HEIGHT=600, font_color=(255, 255, 255)):
     time_elapsed = time.time() - start_time
     if time_elapsed > duration or len(npcs) == 0:
         font = pygame.font.Font('freesansbold.ttf', 32)
@@ -274,10 +274,11 @@ def next_level(level, start_time, duration, npcs, screen, SCREEN_WIDTH=600, SCRE
         level.npcs += 4
         npcs = create_npcs(SCREEN_WIDTH, SCREEN_HEIGHT, level.npcs)
         start_time = time.time()
+        power_bar.increase_power(100)
     # display level for 2 seconds
     if time.time() - start_time < 2:
         font = pygame.font.Font('freesansbold.ttf', 32)
-        text = font.render(str(level.stage), True, font_color)
+        text = font.render(f"Level {level.stage}", True, font_color)
         textRect = text.get_rect()
         textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         screen.blit(text, textRect)
@@ -336,7 +337,8 @@ def draw_npcs(npcs, screen, elapsed_time):
 def apply_damage_to_player(player, npcs):
     for npc in npcs:
         if player.collision_box.collides_with(npc.collision_box):
-            player.hp -= 1
+            if player.hp > 0:
+                player.hp -= 1
 
 
 def remove_dead_npcs(npcs):
@@ -468,6 +470,13 @@ def create_npcs(screen_width, screen_height, num_npcs):
     return npcs
 
 
+def display_level(screen, level, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=(255, 255, 255)):
+    font = pygame.font.Font('freesansbold.ttf', 14)
+    text = font.render(f"Level {level}", True, font_color)
+    textRect = text.get_rect()
+    textRect.center = (SCREEN_WIDTH - 180, 30)
+    screen.blit(text, textRect)
+
 def main():
     # Initialize Pygame
     pygame.init()
@@ -509,6 +518,7 @@ def main():
         draw_hp(player, screen, font_color=WHITE)
         player.draw_sprite(screen, elapsed_time)
         update_power_bar(power_bar, elapsed_time)
+        display_level(screen, level.stage, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         power_bar.draw(screen, 30, 20, 100, 10)
         render_time_remaining(screen, start_time, SCREEN_WIDTH, font_color=WHITE)
         update_npc_collision_box(npcs)
@@ -518,7 +528,8 @@ def main():
         remove_dead_npcs(npcs)
         move_projectile(projectiles, screen)
         check_colision_with_projectile(projectiles, npcs)
-        start_time, level, npcs = next_level(level, start_time, duration, npcs, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
+        start_time, level, npcs = next_level(level, start_time, duration, npcs, screen, power_bar,
+                                             SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
 
         #move_power_balls(power_balls)
