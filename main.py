@@ -260,6 +260,7 @@ def check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=(255
         textRect = text.get_rect()
         textRect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         screen.blit(text, textRect)
+        player.set_animation('defeated')
 
 
 def next_level(level, start_time, duration, npcs, screen, power_bar, SCREEN_WIDTH=600, SCREEN_HEIGHT=600, font_color=(255, 255, 255)):
@@ -357,6 +358,8 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        elif player.get_current_animation() == 'defeated':
+            continue
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botão esquerdo do mouse
             idle_time = time.time()
             pos = pygame.mouse.get_pos()
@@ -382,6 +385,9 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar
                 power_balls.append(power_ball)
                 power_bar.decrease_power(100)
 
+    if player.get_current_animation() == 'defeated':
+        return idle_time
+
     keys = pygame.key.get_pressed()
 
     # if key is pressed
@@ -406,7 +412,7 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar
         player.y_position -= 5
         player.set_animation('back')
 
-    if time.time() - idle_time > 0.3:
+    if time.time() - idle_time > 0.3 and player.get_current_animation() != 'defeated':
         player.set_animation('idle')
 
     return idle_time
@@ -452,6 +458,7 @@ def create_player():
     animated_sprite.add_animation('idle', 'assets/sprite_sheet.png', 3, 200, scale)
     animated_sprite.add_animation('front', 'assets/vampire_hunter_fron2t-Sheet.png', 4, 200, scale)
     animated_sprite.add_animation('back', 'assets/vampire_hunter_back-Sheet.png', 4, 200, scale)
+    animated_sprite.add_animation('defeated', 'assets/vampire_defeated-Sheet.png', 2, 200, scale)
     player_collision_box = Rectangle(40, 0, 60, 80)
     player = Entity(animated_sprite, player_collision_box)
     return player
@@ -511,12 +518,13 @@ def main():
     # Main game loop
     while True:
         elapsed_time = clock.get_time()
+
         idle_time = handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar)
         duration = 60
         draw_tiles(screen, terrain, SCREEN_WIDTH, SCREEN_HEIGHT)
+        player.draw_sprite(screen, elapsed_time)
         draw_npcs(npcs, screen, elapsed_time)
         draw_hp(player, screen, font_color=WHITE)
-        player.draw_sprite(screen, elapsed_time)
         update_power_bar(power_bar, elapsed_time)
         display_level(screen, level.stage, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         power_bar.draw(screen, 30, 20, 100, 10)
