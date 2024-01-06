@@ -183,7 +183,13 @@ class PowerBall:
         return False
 
     def draw(self, screen):
-        pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), self.radius, 2)
+        #pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), self.radius, 2)
+        alpha = 80  # Adjust this value between 0 (completely transparent) and 255 (completely opaque)
+        color = (0, 255, 255, alpha) # (R, G, B, Alpha)
+
+        surface = pygame.Surface((2 * self.max_radius, 2 * self.max_radius), pygame.SRCALPHA)
+        pygame.draw.circle(surface, color, (self.max_radius, self.max_radius), self.radius)
+        screen.blit(surface, (int(self.x) - self.max_radius, int(self.y) - self.max_radius))
 
 def move_towards(target, current, speed):
     delta = target - current
@@ -321,7 +327,7 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls):
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:  # Right mouse button for special power
             idle_time = time.time()
             pos = pygame.mouse.get_pos()
-            power_ball = PowerBall(player.x_position, player.y_position, 10, 100, 10)
+            power_ball = PowerBall(player.x_position, player.y_position, 10, 130, 10)
             power_balls.append(power_ball)
 
     keys = pygame.key.get_pressed()
@@ -368,6 +374,12 @@ def check_collision_with_power_balls(power_balls, npcs):
 def draw_power_balls(power_balls, screen):
     for power_ball in power_balls:
         power_ball.draw(screen)
+
+
+def remove_projectile_out_of_screen(projectiles, SCREEN_WIDTH, SCREEN_HEIGHT):
+    for projectile in projectiles.copy():
+        if projectile.rect.x > SCREEN_WIDTH or projectile.rect.x < 0 or projectile.rect.y > SCREEN_HEIGHT or projectile.rect.y < 0:
+            projectiles.remove(projectile)
 
 
 def main():
@@ -439,6 +451,9 @@ def main():
         #move_power_balls(power_balls)
         draw_power_balls(power_balls, screen)
         check_collision_with_power_balls(power_balls, npcs)
+
+        # check if projectile is out of screen and remove it
+        remove_projectile_out_of_screen(projectiles, SCREEN_WIDTH, SCREEN_HEIGHT)
 
         pygame.display.update()
         clock.tick(FPS)
