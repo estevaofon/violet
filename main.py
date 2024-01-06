@@ -545,12 +545,8 @@ def main():
         start_time, level, npcs = next_level(level, start_time, duration, npcs, screen, power_bar,
                                              SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
-
-        #move_power_balls(power_balls)
         draw_power_balls(power_balls, screen)
         check_collision_with_power_balls(power_balls, npcs)
-
-        # check if projectile is out of screen and remove it
         remove_projectile_out_of_screen(projectiles, SCREEN_WIDTH, SCREEN_HEIGHT)
 
         pygame.display.update()
