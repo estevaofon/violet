@@ -191,6 +191,36 @@ class PowerBall:
         pygame.draw.circle(surface, color, (self.max_radius, self.max_radius), self.radius)
         screen.blit(surface, (int(self.x) - self.max_radius, int(self.y) - self.max_radius))
 
+
+class PowerBar:
+    def __init__(self, max_power):
+        self.max_power = max_power
+        self.current_power = 0
+
+    def increase_power(self, amount):
+        self.current_power = min(self.max_power, self.current_power + amount)
+
+    def decrease_power(self, amount):
+        self.current_power = max(0, self.current_power - amount)
+
+    def get_power_level(self):
+        return self.current_power
+
+    def draw(self, screen, x, y, width, height):
+        # Calculate the fill percentage
+        fill_percentage = self.current_power / self.max_power
+
+        # Calculate the width of the filled portion of the power bar
+        fill_width = int(width * fill_percentage)
+
+        # Draw the power bar outline
+        pygame.draw.rect(screen, (255, 255, 255), (x, y, width, height), 2)
+
+        # Draw the filled portion of the power bar
+        pygame.draw.rect(screen, (0, 255, 0), (x, y, fill_width, height))
+
+
+
 def move_towards(target, current, speed):
     delta = target - current
     if delta > 0:
@@ -301,7 +331,7 @@ def update_npc_collision_box(npcs):
         npc.update_collision_box()
 
 
-def handle_events(player, idle_time, pygame, projectiles, power_balls):
+def handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -325,10 +355,12 @@ def handle_events(player, idle_time, pygame, projectiles, power_balls):
                                         int(player.y_position) + 70, 10, 10, 10, 0)
             projectiles.append(projectile)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:  # Right mouse button for special power
-            idle_time = time.time()
-            pos = pygame.mouse.get_pos()
-            power_ball = PowerBall(player.x_position, player.y_position, 10, 130, 10)
-            power_balls.append(power_ball)
+            if power_bar.get_power_level() >= 100:
+                idle_time = time.time()
+                pos = pygame.mouse.get_pos()
+                power_ball = PowerBall(player.x_position, player.y_position, 10, 130, 10)
+                power_balls.append(power_ball)
+                power_bar.decrease_power(100)
 
     keys = pygame.key.get_pressed()
 
@@ -382,12 +414,25 @@ def remove_projectile_out_of_screen(projectiles, SCREEN_WIDTH, SCREEN_HEIGHT):
             projectiles.remove(projectile)
 
 
+def play_game_music(pygame):
+    pygame.mixer.init()
+    pygame.mixer.music.load('dracula.mp3')  # Replace with the actual path to your music file
+    pygame.mixer.music.play(-1)  # -1 means the music will loop indefinitely
+
+
+def update_power_bar(power_bar, elapsed_time):
+    # Adjust the rate of power increase as needed
+    power_bar.increase_power(elapsed_time * 0.05)
+
 def main():
     # Initialize Pygame
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = 600, 600
     FPS = 30
     WHITE = (255, 255, 255)
+
+    power_bar = PowerBar(max_power=100)
+    power_bar.increase_power(100)
 
     # Create screen and clock
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -428,15 +473,19 @@ def main():
     player.set_animation('idle')
     power_balls = []
 
+    play_game_music(pygame)
+
     # Main game loop
     while True:
         elapsed_time = clock.get_time()
-        idle_time = handle_events(player, idle_time, pygame, projectiles, power_balls)
+        idle_time = handle_events(player, idle_time, pygame, projectiles, power_balls, power_bar)
         duration = 60
         draw_tiles(screen, terrain, SCREEN_WIDTH, SCREEN_HEIGHT)
         draw_npcs(npcs, screen, elapsed_time)
         draw_hp(player, screen, font_color=WHITE)
         player.draw_sprite(screen, elapsed_time)
+        update_power_bar(power_bar, elapsed_time)
+        power_bar.draw(screen, 30, 20, 100, 10)
         render_time_remaining(screen, start_time, SCREEN_WIDTH, font_color=WHITE)
         update_npc_collision_box(npcs)
         player.update_collision_box()
@@ -457,6 +506,7 @@ def main():
 
         pygame.display.update()
         clock.tick(FPS)
+
 
 if __name__ == '__main__':
     main()
