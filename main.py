@@ -166,8 +166,24 @@ class Projectile:
 
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 255, 0), self.rect)
+import math
 
+class PowerBall:
+    def __init__(self, x, y, initial_radius, max_radius, expansion_speed, offset_x=75, offset_y=70):
+        self.x = x + offset_x
+        self.y = y + offset_y
+        self.radius = initial_radius
+        self.max_radius = max_radius
+        self.expansion_speed = expansion_speed
 
+    def expand(self):
+        self.radius += self.expansion_speed
+        if self.radius > self.max_radius:
+            return True  # Indicates that the power ball has reached its maximum radius
+        return False
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), self.radius, 2)
 
 def move_towards(target, current, speed):
     delta = target - current
@@ -279,7 +295,7 @@ def update_npc_collision_box(npcs):
         npc.update_collision_box()
 
 
-def handle_events(player, idle_time, pygame, projectiles):
+def handle_events(player, idle_time, pygame, projectiles, power_balls):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -302,6 +318,11 @@ def handle_events(player, idle_time, pygame, projectiles):
                 projectile = Projectile(int(player.x_position) + 70,
                                         int(player.y_position) + 70, 10, 10, 10, 0)
             projectiles.append(projectile)
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:  # Right mouse button for special power
+            idle_time = time.time()
+            pos = pygame.mouse.get_pos()
+            power_ball = PowerBall(player.x_position, player.y_position, 10, 100, 10)
+            power_balls.append(power_ball)
 
     keys = pygame.key.get_pressed()
 
@@ -331,6 +352,23 @@ def handle_events(player, idle_time, pygame, projectiles):
         player.set_animation('idle')
 
     return idle_time
+
+
+def check_collision_with_power_balls(power_balls, npcs):
+    for power_ball in power_balls.copy():
+        for npc in npcs.copy():
+            distance = math.sqrt((power_ball.x - npc.x_position)**2 + (power_ball.y - npc.y_position)**2)
+            if distance < power_ball.radius:
+                npc.hp -= 20  # Adjust the damage as needed
+
+        if power_ball.expand():
+            power_balls.remove(power_ball)  # Remove the power ball if it has reached its maximum radius
+
+
+def draw_power_balls(power_balls, screen):
+    for power_ball in power_balls:
+        power_ball.draw(screen)
+
 
 def main():
     # Initialize Pygame
@@ -376,10 +414,12 @@ def main():
     idle_time = time.time()
     projectiles = []
     player.set_animation('idle')
+    power_balls = []
+
     # Main game loop
     while True:
         elapsed_time = clock.get_time()
-        idle_time = handle_events(player, idle_time, pygame, projectiles)
+        idle_time = handle_events(player, idle_time, pygame, projectiles, power_balls)
         duration = 60
         draw_tiles(screen, terrain, SCREEN_WIDTH, SCREEN_HEIGHT)
         draw_npcs(npcs, screen, elapsed_time)
@@ -395,6 +435,11 @@ def main():
         check_colision_with_projectile(projectiles, npcs)
         check_vitory(start_time, duration, npcs, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
         check_game_over(player, screen, SCREEN_WIDTH, SCREEN_HEIGHT, font_color=WHITE)
+
+        #move_power_balls(power_balls)
+        draw_power_balls(power_balls, screen)
+        check_collision_with_power_balls(power_balls, npcs)
+
         pygame.display.update()
         clock.tick(FPS)
 
